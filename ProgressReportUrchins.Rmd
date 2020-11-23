@@ -1,0 +1,13 @@
+---
+title: "Progress Report 11/22"
+author: "Caitlin Zimmer"
+date: "11/22/2020"
+output: html_document
+---
+For this project, I want to create data analysis used in the paper "Sea urchins in a high-CO2 world: the influence of acclimation on the immune response to ocean warming and acidification" by C.J Brothers et al. In this paper, sea urchins were exposed to four different combinations of temperature and pH for 1, 15, or 30 days to see if their immune response to stressors changes in these conditions. The immune response was characterized by coelomocyte concentration and type, phagocytic capacity and bactericidal activity. In Table 1 through 4 of the paper they analyzed the Coelomocyte concentration, red amoebocyte concentration, bactericidal activity, and phagocytic activity by running a three way ANOVA with time, pH, and temperatures as fixed factors. Additionally, the types of coelomocytes comprising the coelomic fluid were analysed at each time point using the R vegan package, Adonis function with temperature and pH as fixed factors and the similarity percentage (SIMPER) analysis. In my project, I would like to recreate these ANOVAs and the similarity analysis. 
+The data for this paper was available directly from the journals website in excel spread sheets. However, this data is slighlty hard to understand and there are a lot of different sheets which means the excel file cannot be immediately converted into a csv file. No code was provided for this paper. As of now, I am currently organizing the data into 4 different files, one for each ANOVA and combining the times 
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
