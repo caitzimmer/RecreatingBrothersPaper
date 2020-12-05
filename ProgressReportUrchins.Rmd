@@ -1,13 +1,100 @@
 ---
-title: "Progress Report 11/22"
+title: "Final Report 12/04/2020"
 author: "Caitlin Zimmer"
 date: "11/22/2020"
 output: html_document
----
-For this project, I want to create data analysis used in the paper "Sea urchins in a high-CO2 world: the influence of acclimation on the immune response to ocean warming and acidification" by C.J Brothers et al. In this paper, sea urchins were exposed to four different combinations of temperature and pH for 1, 15, or 30 days to see if their immune response to stressors changes in these conditions. The immune response was characterized by coelomocyte concentration and type, phagocytic capacity and bactericidal activity. In Table 1 through 4 of the paper they analyzed the Coelomocyte concentration, red amoebocyte concentration, bactericidal activity, and phagocytic activity by running a three way ANOVA with time, pH, and temperatures as fixed factors. Additionally, the types of coelomocytes comprising the coelomic fluid were analysed at each time point using the R vegan package, Adonis function with temperature and pH as fixed factors and the similarity percentage (SIMPER) analysis. In my project, I would like to recreate these ANOVAs and the similarity analysis. 
-The data for this paper was available directly from the journals website in excel spread sheets. However, this data is slighlty hard to understand and there are a lot of different sheets which means the excel file cannot be immediately converted into a csv file. No code was provided for this paper. As of now, I am currently organizing the data into 4 different files, one for each ANOVA and combining the times 
+bibliography: RefsA.bib
+---  
+  
+  For this project, I want to create data analysis used in the paper "Sea urchins in a high-CO2 world: the influence of acclimation on the immune response to ocean warming and acidification" by C.J Brothers et al. In this paper, sea urchins were exposed to four different combinations of temperature and pH for 1, 15, or 30 days to see if their immune response to stressors changes in these conditions [@Brothers2016]. The immune response was characterized by coelomocyte concentration, phagocytic capacity and bactericidal activity. In Table 1 through 2 of the paper they analyzed the coelomocyte concentration and phagocytic activity by running a three way ANOVA with time, pH, and temperatures as fixed factors. In my project, I would like to recreate these ANOVAs and the similarity analysis.   
+The data for this paper was available directly from the journals website in excel spread sheets. However, this data is slightly hard to understand and there are a lot of different sheets which means the excel file cannot be immediately converted into a csv file. Additionally, it is not in a format R could run an ANOVA on yet. For example the pH and temperature the urchin was exposed to is given in the excel file as one combined column with a slash separating them. No code was provided for this paper. For this project I used the R packages "tidyverse" and "rstatix". I used rstatix for the ANOVA test and followed a tutorial online posted by datanovia.  
+
+  First I did not know how to manage the data in R so for the coelomocyte concentration ANOVA I manually organized the data in excel. However. this took time and I realize the point of the class is to learn how to do this in R so for the remaining ANOVAs I made each sheet of the excel into a new csv file. As I mentioned above, the treatments were combined into one column in the data. First I added two columns to the end of the data for "pH" and "temperature". In order to separate the original treatment column I used the code "separate(phag_d1,X, sep = "/", into=c("temperature","pH"))". I also had to delete all the rows that had empty values from the transition of excel format to csv. I did this by using the complete cases function. Because the sheets were divided by the day the measurements were collected, there is no actual time data included. My next step was to add a column for each sheet referring to the day the data was collected. After I did this, I combined all the data on phagocytes using the function "merge" and keeping all=TRUE. This created a data frame that had all the time measurements for phagocytes, with the columns time, pH, and temperature. I then ran an ANOVA on this data, as well as the coelomocyte data, using the function "ANOVA_test" from the rstatix package.   
+  The results of my ANOVA analyses lead to the same conlcusions. For example, in the Coelomocyte ANOVA it was found that time, temperature, and time:temperature:pH all had a significant effect on coelomocyte concentrations. However the p-values I calculated varied from the data in the original paper. This same trend was seen when comparing the phagocyte ANOVA. I think this is due to the methods of the paper being too vague. In the statistical analysis portion of the paper it states that an ANOVA was run on phagocytic activity. However, in the data available no column was labelled phagocytic activity [@Brothers2016]. Therefore, I made my best educated guess on which phagocytic parameter listed cooresponded to phagocytic activity. A similar occurence happend for the coelomocyte data. This shows that the data is not reproducable.  
+This paper used simple ANOVA tests to analyze their data and therefore it is not necessary in my opinion that they publish their code. However, the way their data was posted was very disorganized and not compatible with R or running an ANOVA. Furthermore, in their methods they should be clear and concise when stating what 
 
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE, message=FALSE, warning=FALSE)
+library(tidyverse)
+library(rstatix)
+library(ggpubr)
+coelo<-read.csv("./Data/Coelomocytes.csv")
+coelo <- coelo %>% rename(Coelomocytes = Total.Cell..Concentration..coelomocytes.mL.)
+
 ```
+
+```{r, results='hide'}
+coelo %>% 
+  group_by(time, pH, temp) %>%
+    get_summary_stats(Coelomocytes, type="mean_sd")
+coelo_ANOVA <- coelo %>% anova_test(Coelomocytes ~ time*pH*temp)
+coelo_ANOVA
+
+#model <- lm(Coelomocytes~ temp*time*pH, data = coelo)
+#coelo %>%
+  #  group_by(time) %>%
+   # anova_test()
+#headache %>%
+ # group_by(gender) %>%
+ # anova_test(pain_score ~ risk*treatment, error = model)
+
+knitr::kable(coelo_ANOVA,digits=3,caption="Coelomocyte ANOVA")
+
+```
+```{r, results='hide'}
+day1phag<-read.csv("./Data/PhagocytesDay1.csv")
+
+phag_d1 <- day1phag %>%add_column(pH=1:41, temperature=1:41, time=1:41)
+phag_d1$time <-1
+phag_d1<-separate(phag_d1,X,
+                   sep = "/", into=c("temperature","pH"))
+  
+phag_d1<- phag_d1%>% rename(UrchinID =Phagocytic.Activity,
+                             PhagoCount =X.1,
+                             PhagCapacity =X.4)
+phag_d1 <- phag_d1 %>% slice (-c(1,2))
+phag_d1<-phag_d1[complete.cases(phag_d1),]
+# cleaned data for day 1
+
+day15phag<-read.csv("./Data/PhagocytesDay15.csv")
+day15phag<-day15phag %>%add_column(pH=1:41, temperature=1:41, time=1:41)
+day15phag$time<-15
+day15phag<-separate(day15phag,X,
+                    sep = "/",into = c("temperature","pH"))
+day15phag<- day15phag %>%rename(UrchinID =Phagocytic.Activity,
+                                PhagoCount =X.1,
+                                PhagCapacity =X.4)
+day15phag <-day15phag%>%slice(-c(1,2))
+day15phag<-day15phag[complete.cases(day15phag),]
+#Cleaned data for day 15
+
+day30phag <- read.csv("./Data/Day30Phag.csv")
+day30phag<-day30phag%>%add_column(pH=1:39, temperature=1:39,time=1:39)
+day30phag$time<-30
+day30phag<-separate(day30phag, Treatment,
+                    sep = "/",into = c("temperature","pH"))
+day30phag<- day30phag %>%rename(UrchinID =Urchin..,
+                                PhagCapacity =Phagocytic.Capacity)
+day30phag<-day30phag[complete.cases(day30phag),]
+#Cleaned data for day 30
+
+#Now i need to join the three csvs of phagocytic activity for each time period
+Phagocytes <- merge(day15phag,day30phag, all=TRUE)
+Phagocytes<- merge(Phagocytes,phag_d1, all=TRUE)
+keep<-as.vector(c("temperature","pH","time","PhagCapacity"))
+Phagocytes<-Phagocytes[,keep]
+```
+```{r, results='hide'}
+Phagocyte_ANOVA <- Phagocytes %>% anova_test(PhagCapacity ~ time*pH*temperature)
+Phagocyte_ANOVA
+
+
+
+```
+```{r}
+knitr::kable(coelo_ANOVA,digits=4,caption="Coelomocyte ANOVA")
+knitr::kable(Phagocyte_ANOVA,digits=4,caption="Phagocyte ANOVA")
+
+```
+Works Cited:  
